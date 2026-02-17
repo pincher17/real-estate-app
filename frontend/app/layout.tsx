@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import PropertyTypeNav from "../components/PropertyTypeNav";
+import FooterAdminParserLink from "../components/FooterAdminParserLink";
 
 const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
@@ -50,7 +51,10 @@ export default function RootLayout({
         <footer className="border-t bg-white/70">
           <div className="container py-4 text-xs text-slate-500 flex flex-col sm:flex-row justify-between gap-2">
             <span>Batumi real estate aggregator MVP</span>
-            <span>Data from public Telegram channels</span>
+            <span className="flex items-center gap-3">
+              <span>Data from public Telegram channels</span>
+              <FooterAdminParserLink />
+            </span>
           </div>
         </footer>
       </body>
