@@ -1,0 +1,25 @@
+{
+  "name": "real-estate-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "ingest:backfill": "ts-node telegram/ingest.ts backfill",
+    "ingest:incremental": "ts-node telegram/ingest.ts incremental",
+    "ingest:check-deleted": "ts-node telegram/ingest.ts check_deleted",
+    "telegram:auth": "ts-node telegram/auth.ts",
+    "extract": "ts-node extraction/extract.ts",
+    "daily-sync": "ts-node telegram/dailySync.ts",
+    "sync-server": "ts-node telegram/syncServer.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.5",
+    "openai": "^4.63.0",
+    "telegram": "^2.19.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
