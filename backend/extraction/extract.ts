@@ -349,6 +349,20 @@ function pickBuildingName(lines: string[]): string | null {
   return null;
 }
 
+function classifyPropertyType(title: string, description: string): "apartment" | "commercial" | "house_land" {
+  const text = `${title} ${description}`;
+  const apartmentRe = /(^|[^a-zа-я])(квартир|апартамент|apartment)([^a-zа-я]|$)/i;
+  const commercialRe =
+    /(^|[^a-zа-я])(коммерц|коммерческ|бизнес|офис|магазин|кафе|ресторан|склад|помещен|торгов|commercial|office|shop|retail|warehouse|business)([^a-zа-я]|$)/i;
+  const houseLandRe =
+    /(^|[^a-zа-я])(участ|земл|коттедж|таунхаус|частный дом|дача|house|land|villa|townhouse|plot)([^a-zа-я]|$)/i;
+
+  if (apartmentRe.test(text)) return "apartment";
+  if (commercialRe.test(text)) return "commercial";
+  if (houseLandRe.test(text)) return "house_land";
+  return "apartment";
+}
+
 async function fillMissingDescriptions() {
   const { data: listings, error } = await supabase
     .from("listings")
@@ -405,7 +419,7 @@ export async function runExtraction() {
     const { data, error } = await supabase
       .from("listings")
       .select(
-        "id, description_raw, price_usd, price_value, price_currency, area_m2, floor, total_floors, rooms_text, rooms_bedrooms, rooms_living, condition_norm"
+        "id, title, description_raw, property_type, price_usd, price_value, price_currency, area_m2, floor, total_floors, rooms_text, rooms_bedrooms, rooms_living, condition_norm"
       )
       .range(from, from + BATCH_SIZE - 1);
 
@@ -419,6 +433,7 @@ export async function runExtraction() {
     console.log(`Processing listings ${from + 1}-${from + data.length}...`);
 
     for (const row of data as any[]) {
+      const title = (row.title || "").toString();
       const description = (row.description_raw || "").toString();
       if (!description.trim()) continue;
       const lines = description
@@ -427,6 +442,10 @@ export async function runExtraction() {
         .filter(Boolean);
 
       const updates: Record<string, any> = {};
+      const nextPropertyType = classifyPropertyType(title, description);
+      if (row.property_type !== nextPropertyType) {
+        updates.property_type = nextPropertyType;
+      }
 
       const price = extractPrice(description);
       if (price.value != null) {
