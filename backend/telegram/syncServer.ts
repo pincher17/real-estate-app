@@ -1,5 +1,6 @@
 import { createServer } from "http";
 import { runBackfill, runDeletedCheck, runIncremental } from "./ingest";
+import { runExtraction } from "../extraction/extract";
 
 type SyncMode = "incremental" | "backfill" | "check_deleted";
 
@@ -59,7 +60,10 @@ function runSyncInBackground(mode: SyncMode) {
       ? runBackfill()
       : mode === "check_deleted"
       ? runDeletedCheck()
-      : runIncremental();
+      : (async () => {
+          await runIncremental();
+          await runExtraction();
+        })();
 
   task
     .then(() => {

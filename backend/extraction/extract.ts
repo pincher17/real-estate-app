@@ -396,7 +396,7 @@ async function fillMissingDescriptions() {
   console.log(`Description backfill done. Updated ${updated} listings.`);
 }
 
-async function runExtraction() {
+export async function runExtraction() {
   await fillMissingDescriptions();
 
   let from = 0;
@@ -498,7 +498,9 @@ async function runExtraction() {
   console.log("Extraction complete.");
 }
 
-runExtraction().catch((err) => {
-  console.error("Extraction failed", err);
-  process.exit(1);
-});
+if (require.main === module) {
+  runExtraction().catch((err) => {
+    console.error("Extraction failed", err);
+    process.exit(1);
+  });
+}
