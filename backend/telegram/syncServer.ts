@@ -61,8 +61,12 @@ function runSyncInBackground(mode: SyncMode) {
       : mode === "check_deleted"
       ? runDeletedCheck()
       : (async () => {
-          await runIncremental();
-          await runExtraction();
+          const result = await runIncremental();
+          if (result.listingIds.length > 0) {
+            await runExtraction({ listingIds: result.listingIds });
+          } else {
+            console.log("[sync-server] incremental finished: no new listings, extraction skipped");
+          }
         })();
 
   task

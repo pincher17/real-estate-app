@@ -216,9 +216,9 @@ async function processMediaForMessage(
   }
 }
 
-async function processMessage(source: SourceRow, message: Api.Message) {
-  if (!(message instanceof Api.Message)) return;
-  if (!message.id || !message.date) return;
+async function processMessage(source: SourceRow, message: Api.Message): Promise<string | null> {
+  if (!(message instanceof Api.Message)) return null;
+  if (!message.id || !message.date) return null;
 
   try {
     const listingKey =
@@ -233,13 +233,15 @@ async function processMessage(source: SourceRow, message: Api.Message) {
       .maybeSingle();
     if (excluded) {
       console.log(`Skipping excluded listing ${listingKey}`);
-      return;
+      return null;
     }
     const msgRow = await upsertTelegramMessage(source, message);
     const { listingId } = await upsertListingFromMessage(source, message, msgRow);
     await processMediaForMessage(source, message, msgRow, listingId);
+    return listingId;
   } catch (err) {
     console.error(`Error processing message ${message.id}:`, err);
+    return null;
   }
 }
 
@@ -448,7 +450,7 @@ export async function runDeletedCheck() {
   await disconnectTelegramClient();
 }
 
-export async function runIncremental() {
+export async function runIncremental(): Promise<{ processedCount: number; listingIds: string[] }> {
   console.log("Starting incremental sync...\n");
 
   const client = await getTelegramClient();
@@ -458,6 +460,7 @@ export async function runIncremental() {
   const lastId = source.last_message_id ?? 0;
   let maxMessageId = lastId;
   let processedCount = 0;
+  const touchedListingIds = new Set<string>();
 
   console.log(`Fetching messages after ID ${lastId}...\n`);
 
@@ -467,8 +470,9 @@ export async function runIncremental() {
       minId: lastId
     })) {
       if (!(message instanceof Api.Message)) continue;
-      await processMessage(source, message);
+      const listingId = await processMessage(source, message);
       processedCount++;
+      if (listingId) touchedListingIds.add(listingId);
       if (message.id > maxMessageId) maxMessageId = message.id;
     }
   } catch (err) {
@@ -491,6 +495,10 @@ export async function runIncremental() {
   }
 
   await disconnectTelegramClient();
+  return {
+    processedCount,
+    listingIds: Array.from(touchedListingIds)
+  };
 }
 
 if (require.main === module) {

@@ -364,11 +364,22 @@ function classifyPropertyType(title: string, description: string): "apartment" |
   return "apartment";
 }
 
-async function fillMissingDescriptions() {
-  const { data: listings, error } = await supabase
+type RunExtractionOptions = {
+  listingIds?: string[];
+};
+
+async function fillMissingDescriptions(listingIds?: string[]) {
+  if (listingIds && listingIds.length === 0) return;
+
+  let query = supabase
     .from("listings")
     .select("id, source_id, listing_key, description_raw")
     .or("description_raw.is.null,description_raw.eq.");
+  if (listingIds && listingIds.length > 0) {
+    query = query.in("id", listingIds);
+  }
+
+  const { data: listings, error } = await query;
 
   if (error) {
     console.error("Failed to load listings for description backfill", error);
@@ -411,18 +422,23 @@ async function fillMissingDescriptions() {
   console.log(`Description backfill done. Updated ${updated} listings.`);
 }
 
-export async function runExtraction() {
-  await fillMissingDescriptions();
+export async function runExtraction(options: RunExtractionOptions = {}) {
+  const listingIds = options.listingIds && options.listingIds.length > 0 ? options.listingIds : undefined;
+  await fillMissingDescriptions(listingIds);
 
   let from = 0;
   let totalProcessed = 0;
   while (true) {
-    const { data, error } = await supabase
+    let query = supabase
       .from("listings")
       .select(
         "id, title, description_raw, property_type, price_usd, price_value, price_currency, area_m2, floor, total_floors, rooms_text, rooms_bedrooms, rooms_living, condition_norm"
-      )
-      .range(from, from + BATCH_SIZE - 1);
+      );
+    if (listingIds) {
+      query = query.in("id", listingIds);
+    }
+
+    const { data, error } = await query.range(from, from + BATCH_SIZE - 1);
 
     if (error) {
       console.error("Failed to load listings", error);
