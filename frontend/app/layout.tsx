@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import Link from "next/link";
+import { Suspense } from "react";
 import "./globals.css";
 import PropertyTypeNav from "../components/PropertyTypeNav";
 import FooterAdminParserLink from "../components/FooterAdminParserLink";
@@ -42,7 +43,9 @@ export default function RootLayout({
               </Link>
             </div>
             <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
-              <PropertyTypeNav />
+              <Suspense fallback={<div className="h-11 w-full md:w-[520px]" />}>
+                <PropertyTypeNav />
+              </Suspense>
             </div>
           </div>
         </header>
