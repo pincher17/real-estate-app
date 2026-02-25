@@ -28,12 +28,14 @@ html {
 body {
   @apply text-slate-900;
   background: #ffffff;
+  overflow-x: clip;
 }
 
 .page-shell {
   @apply min-h-screen flex flex-col;
   width: 100%;
   max-width: 100%;
+  overflow-x: clip;
 }
 
 .page-main {
