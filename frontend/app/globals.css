@@ -19,7 +19,10 @@ html,
 body {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+}
+
+html {
+  overflow-x: clip;
 }
 
 body {
@@ -31,7 +34,6 @@ body {
   @apply min-h-screen flex flex-col;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 .page-main {
@@ -112,6 +114,10 @@ body {
   font-size: 10px;
   color: #64748b;
   text-align: right;
+}
+
+body[data-filters-open="1"] .mobile-map-toggle {
+  display: none !important;
 }
 
 @layer components {

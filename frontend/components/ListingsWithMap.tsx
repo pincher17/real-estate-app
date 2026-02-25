@@ -180,6 +180,7 @@ export default function ListingsWithMap({
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(initialSearchQuery);
   const [showMapMobile, setShowMapMobile] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const mapSourceListings = mapListings ?? listings;
   const searchFilteredListings = useMemo(() => {
     const query = initialSearchQuery.trim();
@@ -287,12 +288,14 @@ export default function ListingsWithMap({
 
   useEffect(() => {
     setSearchInput(initialSearchQuery);
+    setSearchLoading(false);
   }, [initialSearchQuery]);
 
   const applySearch = (nextValue: string) => {
     const currentQ = (searchParams.get("q") || "").trim();
     const nextQ = nextValue.trim();
     if (currentQ === nextQ) return;
+    setSearchLoading(true);
     const params = new URLSearchParams(searchParams.toString());
     if (nextQ) {
       params.set("q", nextQ);
@@ -326,6 +329,11 @@ export default function ListingsWithMap({
 
   return (
     <div className="grid min-w-0 gap-5 pb-24 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:pb-0">
+      {searchLoading && (
+        <div className="route-loading" aria-hidden="true">
+          <span className="route-loading__bar" />
+        </div>
+      )}
       <div className={`${showListSection ? "" : "hidden lg:block"} min-w-0`}>
         <div className="mb-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 md:p-5">
           <label
@@ -373,6 +381,18 @@ export default function ListingsWithMap({
               Найти
             </button>
           </form>
+          {searchInput.trim() && (
+            <button
+              type="button"
+              className="ui-button-ghost mt-2 w-full sm:hidden"
+              onClick={() => {
+                setSearchInput("");
+                applySearch("");
+              }}
+            >
+              Очистить поиск
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 mb-4">
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
@@ -504,7 +524,7 @@ export default function ListingsWithMap({
                     onClick={() => {
                       if (!canMap) return;
                       const key = `${Number(l.lat).toFixed(5)},${Number(l.lng).toFixed(5)}`;
-                      setSelectedKey(key);
+                      setSelectedKey(null);
                       setHighlightKey(key);
                       setShowMapMobile(true);
                     }}
@@ -564,7 +584,7 @@ export default function ListingsWithMap({
 
       <button
         type="button"
-        className="ui-button fixed bottom-4 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 shadow-lg lg:hidden"
+        className="mobile-map-toggle ui-button fixed bottom-4 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 shadow-lg lg:hidden"
         onClick={() => setShowMapMobile((prev) => !prev)}
       >
         {showMapMobile ? (

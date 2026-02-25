@@ -109,11 +109,41 @@ export default function FilterForm({
   }, []);
 
   useEffect(() => {
-    if (!mobileFiltersOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    const prevPosition = body.style.position;
+    const prevTop = body.style.top;
+    const prevLeft = body.style.left;
+    const prevRight = body.style.right;
+    const prevWidth = body.style.width;
+    const scrollY = window.scrollY;
+
+    if (mobileFiltersOpen) {
+      body.style.overflow = "hidden";
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.setAttribute("data-filters-open", "1");
+    } else {
+      body.removeAttribute("data-filters-open");
+    }
+
     return () => {
-      document.body.style.overflow = prevOverflow;
+      const topValue = body.style.top;
+      body.style.overflow = prevOverflow;
+      body.style.position = prevPosition;
+      body.style.top = prevTop;
+      body.style.left = prevLeft;
+      body.style.right = prevRight;
+      body.style.width = prevWidth;
+      body.removeAttribute("data-filters-open");
+
+      if (mobileFiltersOpen) {
+        const y = Number.parseInt(topValue || "0", 10);
+        window.scrollTo(0, Number.isFinite(y) ? Math.abs(y) : scrollY);
+      }
     };
   }, [mobileFiltersOpen]);
 
@@ -329,7 +359,7 @@ export default function FilterForm({
                   $
                 </span>
                 {openDropdown === "min" && (
-                  <div className="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-lg text-sm">
+                  <div className="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white text-sm shadow-lg md:block">
                     {priceMinOptions.map((value) => (
                       <button
                         key={value}
@@ -362,7 +392,7 @@ export default function FilterForm({
                   $
                 </span>
                 {openDropdown === "max" && (
-                  <div className="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white shadow-lg text-sm">
+                  <div className="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white text-sm shadow-lg md:block">
                     {priceMaxOptions.map((value) => (
                       <button
                         key={value}
@@ -407,7 +437,7 @@ export default function FilterForm({
               </button>
               {openDropdown === "rooms" && (
                 <div className="absolute z-30 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                  <div className="grid grid-cols-1 gap-1 text-sm">
+                  <div className="grid grid-cols-1 gap-1 text-base md:text-sm">
                     {roomOptionsForCheckboxes.map((opt) => (
                       <label
                         key={opt.value}
@@ -425,7 +455,7 @@ export default function FilterForm({
                               return prev.filter((v) => v !== opt.value);
                             });
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -461,7 +491,7 @@ export default function FilterForm({
               </button>
               {openDropdown === "condition" && (
                 <div className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                  <div className="grid grid-cols-1 gap-1 text-sm">
+                  <div className="grid grid-cols-1 gap-1 text-base md:text-sm">
                     {conditionsForCheckboxes.map((opt) => (
                       <label
                         key={`mobile-condition-${opt.value}`}
@@ -479,7 +509,7 @@ export default function FilterForm({
                               return prev.filter((v) => v !== opt.value);
                             });
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -560,7 +590,7 @@ export default function FilterForm({
               </button>
               {openDropdown === "condition" && (
                 <div className="absolute z-20 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                  <div className="grid grid-cols-1 gap-1 text-sm">
+                  <div className="grid grid-cols-1 gap-1 text-base md:text-sm">
                     {conditionsForCheckboxes.map((opt) => (
                       <label
                         key={opt.value}
@@ -578,7 +608,7 @@ export default function FilterForm({
                               return prev.filter((v) => v !== opt.value);
                             });
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span>{opt.label}</span>
                       </label>
@@ -615,10 +645,10 @@ export default function FilterForm({
             </div>
           </div>
         </div>
-      <div className="sticky bottom-0 mt-5 flex flex-col gap-3 border-t border-slate-200 bg-white pt-3 pb-[calc(env(safe-area-inset-bottom)+10px)] sm:flex-row sm:flex-wrap sm:items-center md:static md:border-0 md:bg-transparent md:py-0">
+      <div className="sticky bottom-0 mt-5 flex flex-col gap-3 border-t border-white/70 bg-[#ffffffde] pt-3 pb-[calc(env(safe-area-inset-bottom)+10px)] sm:flex-row sm:flex-wrap sm:items-center md:static md:border-0 md:bg-transparent md:py-0 relative">
         <button
           type="button"
-          className="ui-button-ghost w-full sm:w-auto"
+          className="ui-button-ghost h-12 w-full sm:h-auto sm:w-auto"
           onClick={() => {
             setPriceMin("");
             setPriceMax("");
@@ -640,7 +670,7 @@ export default function FilterForm({
         </button>
         <button
           type="submit"
-          className="ui-button w-full sm:min-w-[180px] sm:w-auto"
+          className="ui-button h-12 w-full sm:h-auto sm:min-w-[180px] sm:w-auto"
           disabled={isPending}
         >
           {isPending ? "Применяем..." : "Применить фильтры"}
