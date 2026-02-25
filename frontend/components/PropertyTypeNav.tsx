@@ -21,7 +21,7 @@ export default function PropertyTypeNav() {
 
   return (
     <nav className="w-full max-w-[760px]">
-      <div className="grid grid-cols-1 gap-1 rounded-2xl border border-slate-200 bg-white/80 p-1 shadow-sm sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-white/80 p-1 shadow-sm">
         {PROPERTY_TYPE_OPTIONS.map((item) => {
           const isActive =
             item.value === selectedType ||
@@ -32,7 +32,7 @@ export default function PropertyTypeNav() {
             <Link
               key={item.value}
               href={buildHref(item.value)}
-              className={`relative inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              className={`relative inline-flex min-h-10 items-center justify-center rounded-xl px-2 py-2 text-center text-[13px] font-semibold leading-tight transition sm:min-h-11 sm:px-3 sm:text-sm ${
                 isActive
                   ? "bg-blue-600 text-white shadow-sm"
                   : "text-slate-700 hover:bg-blue-50"

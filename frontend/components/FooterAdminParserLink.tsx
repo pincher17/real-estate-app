@@ -50,7 +50,7 @@ export default function FooterAdminParserLink() {
 
   return (
     <Link href="/admin/parser" className="text-blue-700 hover:underline">
-      Parser
+      Парсер
     </Link>
   );
 }

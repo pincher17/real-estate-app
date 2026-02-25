@@ -113,15 +113,15 @@ export default function ListingMap({
         if (!maplibregl) continue;
         const el = document.createElement("div");
         el.className = "listing-marker";
-        const pointMeta = points.find((p) => p.id === point.id);
-        if (pointMeta) {
-          const items = pointMeta.items ?? [
-            {
-              id: pointMeta.id,
-              title: "Apartment",
-              priceLabel: ""
-            }
-          ];
+          const pointMeta = points.find((p) => p.id === point.id);
+          if (pointMeta) {
+            const items = pointMeta.items ?? [
+              {
+                id: pointMeta.id,
+                title: "Квартира",
+                priceLabel: ""
+              }
+            ];
           el.dataset.items = JSON.stringify(items.slice(0, 3));
           el.dataset.count = String(items.length);
         }
@@ -155,7 +155,7 @@ export default function ListingMap({
             .join("");
           const footer =
             count > items.length
-              ? `<div class="map-popup-more">+${count - items.length} more</div>`
+              ? `<div class="map-popup-more">+${count - items.length} еще</div>`
               : "";
           const html = `
             <div class="map-popup-list">
@@ -256,7 +256,7 @@ export default function ListingMap({
       <div
         className={`rounded-xl border bg-white/80 p-3 text-xs text-slate-500 ${className || ""}`}
       >
-        Map is not configured. Add `NEXT_PUBLIC_MAPTILER_KEY` in
+        Карта не настроена. Добавьте `NEXT_PUBLIC_MAPTILER_KEY` в
         `.env.local`.
       </div>
     );

@@ -3,6 +3,7 @@ import AdminEditPanel from "../../../components/AdminEditPanel";
 import AdminEditToggle from "../../../components/AdminEditToggle";
 import ListingMap from "../../../components/ListingMap";
 import ListingGallery from "../../../components/ListingGallery";
+import TelegramDescription from "../../../components/TelegramDescription";
 import Link from "next/link";
 
 type ListingDetail = {
@@ -29,6 +30,13 @@ type ListingDetail = {
   permalink: string | null;
   posted_at: string;
   listing_images: { url: string | null; position: number }[] | null;
+};
+
+const CONDITION_LABELS: Record<string, string> = {
+  WHITE_FRAME: "Белый каркас",
+  BLACK_FRAME: "Черный каркас",
+  RENOVATED: "С ремонтом",
+  FURNISHED: "С мебелью"
 };
 
 async function fetchListing(id: string): Promise<ListingDetail | null> {
@@ -118,7 +126,7 @@ async function fetchListing(id: string): Promise<ListingDetail | null> {
 }
 
 export const dynamic = "force-dynamic";
-const detailDateFormatter = new Intl.DateTimeFormat("en-US", {
+const detailDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   timeZone: "UTC",
   month: "short",
   day: "numeric",
@@ -137,10 +145,10 @@ export default async function ListingPage({
     return (
       <div className="space-y-3">
         <Link href="/" className="text-xs text-slate-600 hover:underline">
-          ← Back to listings
+          ← К объявлениям
         </Link>
         <div className="rounded-xl border bg-white p-4 shadow-sm">
-          <p className="text-sm">Listing not found.</p>
+          <p className="text-sm">Объявление не найдено.</p>
         </div>
       </div>
     );
@@ -160,10 +168,10 @@ export default async function ListingPage({
       ? `${listing.price_value.toLocaleString("en-US", {
           maximumFractionDigits: 0
         })} ${listing.price_currency || ""}`
-      : "Price on request";
+      : "Цена по запросу";
 
   const area =
-    listing.area_m2 != null ? `${listing.area_m2.toFixed(0)} m²` : "—";
+    listing.area_m2 != null ? `${listing.area_m2.toFixed(0)} м²` : "—";
 
   const rooms =
     listing.rooms_text ||
@@ -182,7 +190,7 @@ export default async function ListingPage({
     listing.building_name ||
     listing.address_text ||
     [listing.street, listing.district].filter(Boolean).join(", ") ||
-    "Apartment in Batumi";
+    "Квартира в Батуми";
 
   const posted = new Date(listing.posted_at);
 
@@ -195,6 +203,19 @@ export default async function ListingPage({
           "en-US"
         )} $/m²`
       : null;
+  const conditionLabel = listing.condition_norm
+    ? CONDITION_LABELS[listing.condition_norm] ||
+      listing.condition_norm
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/^\w/, (c) => c.toUpperCase())
+    : listing.condition_raw || "—";
+  const addressLabel =
+    listing.address_text ||
+    [listing.street, listing.building_name, listing.district]
+      .filter(Boolean)
+      .join(", ") ||
+    "Батуми";
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -207,68 +228,88 @@ export default async function ListingPage({
             </div>
           </div>
 
-          <div className="ui-card-strong p-4 space-y-3">
-            <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-            <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3">
-              <div>
-                <div className="text-slate-500">Price</div>
-                <div className="font-medium">{price}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Area</div>
-                <div className="font-medium">{area}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Price per m²</div>
-                <div className="font-medium">{pricePerM2 || "—"}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Rooms</div>
-                <div className="font-medium">{rooms}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Floor</div>
-                <div className="font-medium">{floor}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Condition</div>
-                <div className="font-medium">
-                  {listing.condition_norm
-                    ? listing.condition_norm
-                        .toLowerCase()
-                        .replace(/_/g, " ")
-                        .replace(/^\w/, (c) => c.toUpperCase())
-                    : listing.condition_raw || "—"}
+          <div className="ui-card-strong overflow-hidden border-slate-200/80">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-4 text-slate-900 md:px-5">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-slate-500">
+                Основная информация
+              </p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight md:text-2xl">
+                {title}
+              </h2>
+              <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-1">
+                <div className="text-3xl font-semibold leading-none md:text-4xl">
+                  {price}
+                </div>
+                <div className="text-sm text-slate-500">
+                  {pricePerM2 || "—"} за м²
                 </div>
               </div>
-              <div>
-                <div className="text-slate-500">District</div>
-                <div className="font-medium">{listing.district || "—"}</div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 p-3 md:grid-cols-3 md:gap-3 md:p-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Площадь
+                </div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">
+                  {area}
+                </div>
               </div>
-              <div className="col-span-2 md:col-span-3">
-                <div className="text-slate-500">Address</div>
-                <div className="font-medium text-sm text-slate-900">
-                  {listing.address_text ||
-                    [listing.street, listing.building_name, listing.district]
-                      .filter(Boolean)
-                      .join(", ") ||
-                    "Batumi"}
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Комнаты
+                </div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">
+                  {rooms}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Этаж
+                </div>
+                <div className="mt-1 text-lg font-semibold text-slate-900">
+                  {floor}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Состояние
+                </div>
+                <div className="mt-1 text-base font-semibold text-slate-900">
+                  {conditionLabel}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Район
+                </div>
+                <div className="mt-1 text-base font-semibold text-slate-900">
+                  {listing.district || "—"}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Дата
+                </div>
+                <div className="mt-1 text-base font-semibold text-slate-900">
+                  {detailDateFormatter.format(posted)}
+                </div>
+              </div>
+              <div className="col-span-2 rounded-xl border border-slate-200 bg-white p-3 md:col-span-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Адрес
+                </div>
+                <div className="mt-1 text-base font-semibold text-slate-900">
+                  {addressLabel}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="ui-card-strong p-4">
-            <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
-              <span>Description (original Telegram)</span>
-              <span>
-                {detailDateFormatter.format(posted)}
-              </span>
-            </div>
-            <div className="max-h-[320px] overflow-y-auto rounded-xl border border-slate-200/60 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-800 whitespace-pre-wrap">
-              {listing.description_raw}
-            </div>
-          </div>
+          <TelegramDescription
+            text={listing.description_raw}
+            postedLabel={detailDateFormatter.format(posted)}
+          />
 
           <AdminEditToggle>
             <AdminEditPanel
@@ -325,7 +366,7 @@ export default async function ListingPage({
 
           <div className="ui-card-strong p-4 space-y-2 text-xs">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-slate-500">Telegram link</span>
+              <span className="text-slate-500">Ссылка на Telegram</span>
               {listing.permalink ? (
                 <a
                   href={listing.permalink}
@@ -333,19 +374,19 @@ export default async function ListingPage({
                   rel="noreferrer"
                   className="ui-button px-3 py-1 text-[11px]"
                 >
-                  Open in Telegram
+                  Открыть в Telegram
                 </a>
               ) : (
-                <span className="text-slate-400">Not available</span>
+                <span className="text-slate-400">Недоступно</span>
               )}
             </div>
           </div>
 
           <div className="ui-card-strong p-4 text-[11px] text-slate-500">
-            <p className="mb-1 font-medium text-slate-700">About this data</p>
+            <p className="mb-1 font-medium text-slate-700">О данных</p>
             <p>
-              Listing details are extracted automatically from public Telegram
-              posts. Some fields may be incomplete or approximate.
+              Данные объявления автоматически извлекаются из публичных
+              Telegram-постов. Часть полей может быть неполной или приблизительной.
             </p>
           </div>
         </div>

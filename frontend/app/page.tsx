@@ -33,23 +33,55 @@ type ListingRow = {
   listing_images: { url: string | null; position: number }[] | null;
 };
 
+function getMultiParam(
+  value: string | string[] | undefined
+): string[] {
+  if (!value) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .flatMap((item) => item.split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 async function fetchListings(
   searchParams: SearchParams,
   page: number
 ): Promise<{ rows: ListingRow[]; total: number }> {
+  const allowedRooms = new Set([
+    "studio",
+    "1+1",
+    "2+1",
+    "3+1",
+    "4+1",
+    "5+1",
+    "open_plan"
+  ]);
+  const allowedConditions = new Set([
+    "WHITE_FRAME",
+    "BLACK_FRAME",
+    "RENOVATED",
+    "FURNISHED"
+  ]);
   const priceMin = searchParams.priceMin as string | undefined;
   const priceMax = searchParams.priceMax as string | undefined;
   const areaMin = searchParams.areaMin as string | undefined;
   const areaMax = searchParams.areaMax as string | undefined;
-  const rooms = searchParams.rooms as string | undefined;
+  const rooms = getMultiParam(searchParams.rooms).filter((value) =>
+    allowedRooms.has(value)
+  );
   const district = searchParams.district as string | undefined;
   const street = searchParams.street as string | undefined;
-  const condition = searchParams.condition as string | undefined;
+  const condition = getMultiParam(searchParams.condition).filter((value) =>
+    allowedConditions.has(value)
+  );
   const floorMin = searchParams.floorMin as string | undefined;
   const floorMax = searchParams.floorMax as string | undefined;
   const hasBalcony = searchParams.hasBalcony as string | undefined;
   const newBuilding = searchParams.newBuilding as string | undefined;
   const sort = (searchParams.sort as string | undefined) || "newest";
+  const qRaw = (searchParams.q as string | undefined) || "";
+  const q = qRaw.trim().replace(/[%]/g, "").replace(/,/g, " ");
   const propertyType = normalizePropertyType(
     searchParams.propertyType as string | undefined
   );
@@ -121,11 +153,22 @@ async function fetchListings(
     if (areaMin) query = query.gte("area_m2", Number(areaMin));
     if (areaMax) query = query.lte("area_m2", Number(areaMax));
 
-    if (rooms) {
-      if (rooms === "studio") {
-        query = query.ilike("rooms_text", "%studio%");
-      } else {
-        query = query.eq("rooms_text", rooms);
+    if (rooms.length) {
+      const roomFilters: string[] = [];
+      rooms.forEach((room) => {
+        if (room === "studio") {
+          roomFilters.push("rooms_text.ilike.%studio%");
+          return;
+        }
+        if (room === "open_plan") {
+          roomFilters.push("rooms_text.eq.open_plan");
+          roomFilters.push("rooms_text.ilike.%open%plan%");
+          return;
+        }
+        roomFilters.push(`rooms_text.eq.${room}`);
+      });
+      if (roomFilters.length) {
+        query = query.or(roomFilters.join(","));
       }
     }
 
@@ -137,8 +180,20 @@ async function fetchListings(
       query = query.ilike("street", `%${street}%`);
     }
 
-    if (condition) {
-      query = query.eq("condition_norm", condition);
+    if (condition.length) {
+      query = query.in("condition_norm", condition);
+    }
+
+    if (q) {
+      query = query.or(
+        [
+          `description_raw.ilike.%${q}%`,
+          `building_name.ilike.%${q}%`,
+          `address_text.ilike.%${q}%`,
+          `street.ilike.%${q}%`,
+          `district.ilike.%${q}%`
+        ].join(",")
+      );
     }
 
     if (floorMin) query = query.gte("floor", Number(floorMin));
@@ -212,26 +267,137 @@ async function fetchListings(
   return { rows, total };
 }
 
+async function fetchMapListingsAll(
+  propertyType: string
+): Promise<ListingRow[]> {
+  const buildQuery = (withPropertyType: boolean) => {
+    let query = supabase.from("listings").select(
+      withPropertyType
+        ? `
+      id,
+      price_usd,
+      price_value,
+      price_currency,
+      area_m2,
+      floor,
+      total_floors,
+      rooms_text,
+      rooms_bedrooms,
+      condition_norm,
+      district,
+      street,
+      building_name,
+      address_text,
+      lat,
+      lng,
+      posted_at,
+      description_raw,
+      property_type,
+      listing_images (
+        url,
+        position
+      )
+    `
+        : `
+      id,
+      price_usd,
+      price_value,
+      price_currency,
+      area_m2,
+      floor,
+      total_floors,
+      rooms_text,
+      rooms_bedrooms,
+      condition_norm,
+      district,
+      street,
+      building_name,
+      address_text,
+      lat,
+      lng,
+      posted_at,
+      description_raw,
+      listing_images (
+        url,
+        position
+      )
+    `
+    );
+
+    if (withPropertyType) {
+      query = query.eq("property_type", propertyType);
+    }
+
+    return query.order("posted_at", { ascending: false });
+  };
+
+  let { data, error } = await buildQuery(true);
+
+  if (error || !data) {
+    if (propertyType !== DEFAULT_PROPERTY_TYPE) {
+      return [];
+    }
+    const fallback = await buildQuery(false);
+    data = fallback.data as any;
+    error = fallback.error as any;
+    if (error || !data) {
+      console.error("Supabase map listings error", error);
+      return [];
+    }
+  }
+
+  return data as any as ListingRow[];
+}
+
+function hasActiveFiltersOrSearch(searchParams: SearchParams): boolean {
+  const keysToCheck = [
+    "q",
+    "priceMin",
+    "priceMax",
+    "areaMin",
+    "areaMax",
+    "rooms",
+    "district",
+    "street",
+    "condition",
+    "floorMin",
+    "floorMax",
+    "hasBalcony",
+    "newBuilding"
+  ] as const;
+
+  return keysToCheck.some((key) => {
+    const value = searchParams[key];
+    if (Array.isArray(value)) {
+      return value.some((item) => item.trim() !== "");
+    }
+    return (value || "").trim() !== "";
+  });
+}
+
 const conditions = [
-  { value: "", label: "Any condition" },
-  { value: "WHITE_FRAME", label: "White frame" },
-  { value: "BLACK_FRAME", label: "Black frame" },
-  { value: "RENOVATED", label: "Renovated" },
-  { value: "FURNISHED", label: "Furnished" }
+  { value: "", label: "Любое состояние" },
+  { value: "WHITE_FRAME", label: "Белый каркас" },
+  { value: "BLACK_FRAME", label: "Черный каркас" },
+  { value: "RENOVATED", label: "С ремонтом" },
+  { value: "FURNISHED", label: "С мебелью" }
 ];
 
 const roomOptions = [
-  { value: "", label: "Any rooms" },
-  { value: "studio", label: "Studio" },
+  { value: "", label: "Любое количество комнат" },
+  { value: "studio", label: "Студия" },
   { value: "1+1", label: "1+1" },
   { value: "2+1", label: "2+1" },
-  { value: "3+1", label: "3+1" }
+  { value: "3+1", label: "3+1" },
+  { value: "4+1", label: "4+1" },
+  { value: "5+1", label: "5+" },
+  { value: "open_plan", label: "Открытая планировка" }
 ];
 
 const sortOptions = [
-  { value: "newest", label: "Newest" },
-  { value: "cheapest", label: "Cheapest" },
-  { value: "pricePerM2", label: "Price per m²" }
+  { value: "newest", label: "Сначала новые" },
+  { value: "cheapest", label: "Сначала дешевле" },
+  { value: "pricePerM2", label: "Цена за м²" }
 ];
 
 export const dynamic = "force-dynamic";
@@ -253,10 +419,10 @@ export default async function Page({
   const priceMax = (resolvedSearchParams.priceMax as string) || "";
   const areaMin = (resolvedSearchParams.areaMin as string) || "";
   const areaMax = (resolvedSearchParams.areaMax as string) || "";
-  const rooms = (resolvedSearchParams.rooms as string) || "";
+  const rooms = getMultiParam(resolvedSearchParams.rooms);
   const district = (resolvedSearchParams.district as string) || "";
   const street = (resolvedSearchParams.street as string) || "";
-  const condition = (resolvedSearchParams.condition as string) || "";
+  const condition = getMultiParam(resolvedSearchParams.condition);
   const floorMin = (resolvedSearchParams.floorMin as string) || "";
   const floorMax = (resolvedSearchParams.floorMax as string) || "";
   const hasBalcony = (resolvedSearchParams.hasBalcony as string) || "";
@@ -265,7 +431,12 @@ export default async function Page({
   const propertyType = normalizePropertyType(
     (resolvedSearchParams.propertyType as string) || DEFAULT_PROPERTY_TYPE
   );
+  const q = ((resolvedSearchParams.q as string) || "").trim();
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const useFullMapDataset = !hasActiveFiltersOrSearch(resolvedSearchParams);
+  const mapListings = useFullMapDataset
+    ? await fetchMapListingsAll(propertyType)
+    : listings;
 
   const buildPageHref = (nextPage: number) => {
     const params = new URLSearchParams();
@@ -296,7 +467,7 @@ export default async function Page({
   })();
 
   return (
-    <div className="flex flex-col gap-5 md:gap-7">
+    <div className="grid min-w-0 gap-5 md:gap-7">
       <FilterForm
         initialValues={{
           priceMin,
@@ -321,17 +492,19 @@ export default async function Page({
 
       <ListingsWithMap
         listings={listings}
+        mapListings={mapListings}
+        initialSearchQuery={q}
         pagination={
           totalPages > 1 ? (
             <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
               <div className="flex items-center gap-2">
                 {page > 1 ? (
                   <a className="ui-button-ghost" href={buildPageHref(page - 1)}>
-                    ← Previous
+                    ← Назад
                   </a>
                 ) : (
                   <span className="ui-button-ghost opacity-50">
-                    ← Previous
+                    ← Назад
                   </span>
                 )}
                 <div className="flex items-center gap-1">
@@ -360,10 +533,10 @@ export default async function Page({
                 </div>
                 {page < totalPages ? (
                   <a className="ui-button" href={buildPageHref(page + 1)}>
-                    Next →
+                    Далее →
                   </a>
                 ) : (
-                  <span className="ui-button opacity-50">Next →</span>
+                  <span className="ui-button opacity-50">Далее →</span>
                 )}
               </div>
             </div>

@@ -46,21 +46,21 @@ export default function AdminLoginPage() {
 
     setStatus("success");
     setHasSession(true);
-    setMessage("Signed in.");
+    setMessage("Вход выполнен.");
   }
 
   return (
     <div className="max-w-xl mx-auto rounded-xl border bg-white p-5 shadow-sm space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Admin Sign In</h2>
+        <h2 className="text-lg font-semibold">Вход администратора</h2>
         <p className="text-xs text-slate-500">
-          Sign in with your admin account to edit listings and access parser controls.
+          Войдите в аккаунт администратора, чтобы редактировать объявления и управлять парсером.
         </p>
       </div>
 
       <form className="space-y-3" onSubmit={onSubmit}>
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-slate-600">Email</label>
+          <label className="block text-xs font-medium text-slate-600">Почта</label>
           <input
             type="email"
             value={email}
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-slate-600">Password</label>
+          <label className="block text-xs font-medium text-slate-600">Пароль</label>
           <input
             type="password"
             value={password}
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
           className="inline-flex items-center justify-center rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
           disabled={status === "loading"}
         >
-          {status === "loading" ? "Signing in..." : "Sign in"}
+          {status === "loading" ? "Входим..." : "Войти"}
         </button>
       </form>
 
@@ -101,7 +101,7 @@ export default function AdminLoginPage() {
 
       {hasSession && (
         <div className="text-xs text-slate-600">
-          Parser controls page:{" "}
+          Страница управления парсером:{" "}
           <Link href="/admin/parser" className="text-blue-700 hover:underline">
             /admin/parser
           </Link>

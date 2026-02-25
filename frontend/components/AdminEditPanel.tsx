@@ -74,8 +74,8 @@ export default function AdminEditPanel({
   const initialRef = useRef(initialForm);
   const roomOptions = [
     { value: "", label: "—" },
-    { value: "studio", label: "Studio" },
-    { value: "open_plan", label: "Open plan" },
+    { value: "studio", label: "Студия" },
+    { value: "open_plan", label: "Открытая планировка" },
     { value: "1+1", label: "1+1" },
     { value: "2+1", label: "2+1" },
     { value: "3+1", label: "3+1" },
@@ -89,6 +89,12 @@ export default function AdminEditPanel({
     "RENOVATED",
     "FURNISHED"
   ];
+  const conditionLabels: Record<string, string> = {
+    WHITE_FRAME: "Белый каркас",
+    BLACK_FRAME: "Черный каркас",
+    RENOVATED: "С ремонтом",
+    FURNISHED: "С мебелью"
+  };
   const propertyTypeOptions = PROPERTY_TYPE_OPTIONS;
 
   useEffect(() => {
@@ -323,7 +329,7 @@ export default function AdminEditPanel({
         /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/
       );
       if (!match) {
-        setError("Clipboard does not contain coordinates.");
+        setError("В буфере обмена нет координат.");
         return;
       }
       const lat = match[1];
@@ -339,7 +345,7 @@ export default function AdminEditPanel({
         void onSave(nextForm, ["lat", "lng"]);
       }
     } catch {
-      setError("Failed to read clipboard.");
+      setError("Не удалось прочитать буфер обмена.");
     }
   }
 
@@ -351,7 +357,7 @@ export default function AdminEditPanel({
     } = await supabaseBrowser.auth.getSession();
     const token = session?.access_token;
     if (!token) {
-      setError("Not authenticated.");
+      setError("Требуется авторизация.");
       setSaving(false);
       return;
     }
@@ -444,7 +450,7 @@ export default function AdminEditPanel({
     if (includeKeys.size === 0) {
       setSaving(false);
       setSuccess("");
-      setError("No changes to save.");
+      setError("Нет изменений для сохранения.");
       return;
     }
 
@@ -461,12 +467,12 @@ export default function AdminEditPanel({
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      setError(json?.error || "Failed to save changes.");
+      setError(json?.error || "Не удалось сохранить изменения.");
       setSaving(false);
       return;
     }
 
-    setSuccess("Saved.");
+    setSuccess("Сохранено.");
     setTouched({});
     initialRef.current = { ...effectiveForm };
     const nextForm = effectiveForm;
@@ -486,11 +492,11 @@ export default function AdminEditPanel({
 
   async function onDelete() {
     const confirmDelete = window.confirm(
-      "Delete this listing? It will be removed from the site and excluded from future imports."
+      "Удалить это объявление? Оно исчезнет с сайта и будет исключено из будущих импортов."
     );
     if (!confirmDelete) return;
 
-    const reason = window.prompt("Optional reason (visible only to admins):") || null;
+    const reason = window.prompt("Причина (необязательно, видно только администраторам):") || null;
 
     setSaving(true);
     setError("");
@@ -500,7 +506,7 @@ export default function AdminEditPanel({
     } = await supabaseBrowser.auth.getSession();
     const token = session?.access_token;
     if (!token) {
-      setError("Not authenticated.");
+      setError("Требуется авторизация.");
       setSaving(false);
       return;
     }
@@ -516,12 +522,12 @@ export default function AdminEditPanel({
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      setError(json?.error || "Failed to delete listing.");
+      setError(json?.error || "Не удалось удалить объявление.");
       setSaving(false);
       return;
     }
 
-    setSuccess("Listing deleted.");
+    setSuccess("Объявление удалено.");
     setSaving(false);
     router.refresh();
   }
@@ -532,13 +538,13 @@ export default function AdminEditPanel({
   return (
     <div className="ui-card-strong p-4 text-xs space-y-3">
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-slate-700">Admin edit</span>
-        <span className="text-[11px] text-slate-400">Listing ID {listing.id}</span>
+        <span className="font-semibold text-slate-700">Редактирование админа</span>
+        <span className="text-[11px] text-slate-400">ID объявления: {listing.id}</span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Price (USD)</span>
+          <span className="text-[11px] text-slate-500">Цена (USD)</span>
           <input
             className="ui-input"
             value={form.price_value}
@@ -549,7 +555,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Area m²</span>
+          <span className="text-[11px] text-slate-500">Площадь м²</span>
           <input
             className="ui-input"
             value={form.area_m2}
@@ -560,7 +566,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Floor</span>
+          <span className="text-[11px] text-slate-500">Этаж</span>
           <input
             className="ui-input"
             value={form.floor}
@@ -571,7 +577,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Total floors</span>
+          <span className="text-[11px] text-slate-500">Этажность</span>
           <input
             className="ui-input"
             value={form.total_floors}
@@ -582,7 +588,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Rooms</span>
+          <span className="text-[11px] text-slate-500">Комнаты</span>
           <select
             className="ui-select"
             value={form.rooms_text}
@@ -599,7 +605,7 @@ export default function AdminEditPanel({
           </select>
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Condition</span>
+          <span className="text-[11px] text-slate-500">Состояние</span>
           <select
             className="ui-select"
             value={form.condition_norm}
@@ -610,18 +616,13 @@ export default function AdminEditPanel({
           >
             {conditionOptions.map((opt) => (
               <option key={opt || "any"} value={opt}>
-                {opt
-                  ? opt
-                      .toLowerCase()
-                      .replace(/_/g, " ")
-                      .replace(/^\w/, (c) => c.toUpperCase())
-                  : "—"}
+                {opt ? conditionLabels[opt] || opt : "—"}
               </option>
             ))}
           </select>
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">District</span>
+          <span className="text-[11px] text-slate-500">Район</span>
           <input
             className="ui-input"
             value={form.district}
@@ -632,7 +633,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1">
-          <span className="text-[11px] text-slate-500">Property type</span>
+          <span className="text-[11px] text-slate-500">Тип недвижимости</span>
           <select
             className="ui-select"
             value={form.property_type}
@@ -649,7 +650,7 @@ export default function AdminEditPanel({
           </select>
         </label>
         <label className="space-y-1 md:col-span-2">
-          <span className="text-[11px] text-slate-500">Building name</span>
+          <span className="text-[11px] text-slate-500">Название комплекса</span>
           <input
             className="ui-input"
             value={form.building_name}
@@ -660,7 +661,7 @@ export default function AdminEditPanel({
           />
         </label>
         <label className="space-y-1 md:col-span-2">
-          <span className="text-[11px] text-slate-500">Address text</span>
+          <span className="text-[11px] text-slate-500">Адрес</span>
           <input
             className="ui-input"
             value={form.address_text}
@@ -677,8 +678,8 @@ export default function AdminEditPanel({
       {suggestions.length > 0 && (
         <div className="rounded-xl border border-slate-200/60 bg-white p-2 text-[11px] space-y-1">
           <div className="flex items-center justify-between text-slate-500">
-            <span>Address suggestions</span>
-            {searching && <span>Searching…</span>}
+            <span>Подсказки адреса</span>
+            {searching && <span>Поиск…</span>}
           </div>
           {suggestions.map((s) => (
             <button
@@ -724,12 +725,12 @@ export default function AdminEditPanel({
             }
           }}
         >
-          {showCoords ? "Hide coordinates" : "Add coordinates manually"}
+          {showCoords ? "Скрыть координаты" : "Добавить координаты вручную"}
         </button>
         {showCoords && (
           <div className="mt-2 grid grid-cols-2 gap-2">
             <label className="space-y-1">
-              <span className="text-[11px] text-slate-500">Latitude</span>
+              <span className="text-[11px] text-slate-500">Широта</span>
               <input
                 className="ui-input"
                 value={form.lat}
@@ -741,7 +742,7 @@ export default function AdminEditPanel({
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] text-slate-500">Longitude</span>
+              <span className="text-[11px] text-slate-500">Долгота</span>
               <input
                 className="ui-input"
                 value={form.lng}
@@ -758,17 +759,17 @@ export default function AdminEditPanel({
                 className="ui-button-ghost text-[11px]"
                 onClick={() => pasteCoordsFromClipboard(false)}
               >
-                Paste
+                Вставить
               </button>
               <button
                 type="button"
                 className="ui-button-ghost text-[11px]"
                 onClick={() => pasteCoordsFromClipboard(true)}
               >
-                Paste & save
+                Вставить и сохранить
               </button>
               <span className="text-[11px] text-slate-400">
-                Format: 41.628230, 41.609048
+                Формат: 41.628230, 41.609048
               </span>
             </div>
           </div>
@@ -776,7 +777,7 @@ export default function AdminEditPanel({
       </div>
 
       <label className="space-y-1 block">
-        <span className="text-[11px] text-slate-500">Description</span>
+        <span className="text-[11px] text-slate-500">Описание</span>
         <textarea
           className="ui-input min-h-[120px] font-mono text-[11px]"
           value={form.description_raw}
@@ -796,7 +797,7 @@ export default function AdminEditPanel({
           }}
           disabled={saving || !isDirty}
         >
-          {saving ? "Saving..." : "Save changes"}
+          {saving ? "Сохраняем..." : "Сохранить изменения"}
         </button>
         <button
           type="button"
@@ -804,7 +805,7 @@ export default function AdminEditPanel({
           onClick={onDelete}
           disabled={saving}
         >
-          Delete listing
+          Удалить объявление
         </button>
         {error && <span className="text-[11px] text-rose-600">{error}</span>}
         {success && !error && (

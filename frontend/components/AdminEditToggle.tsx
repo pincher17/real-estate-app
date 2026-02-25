@@ -51,7 +51,7 @@ export default function AdminEditToggle({
         className="ui-button-ghost text-[11px]"
         onClick={() => setOpen((v) => !v)}
       >
-        {open ? "Hide admin edit" : "Show admin edit"}
+        {open ? "Скрыть режим редактирования" : "Показать режим редактирования"}
       </button>
       {open ? children : null}
     </div>

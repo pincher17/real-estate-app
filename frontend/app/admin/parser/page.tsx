@@ -76,7 +76,7 @@ export default function AdminParserPage() {
 
   async function runSync(mode: SyncMode) {
     if (!accessToken) {
-      setSyncMessage("Not authenticated.");
+      setSyncMessage("Требуется авторизация.");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function AdminParserPage() {
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setSyncMessage(json?.error || "Failed to start parser.");
+      setSyncMessage(json?.error || "Не удалось запустить парсер.");
       setSyncBusy(false);
       return;
     }
@@ -104,10 +104,10 @@ export default function AdminParserPage() {
     setSyncStartedAt(json.startedAt ?? null);
     setSyncMessage(
       mode === "check_deleted"
-        ? "Old listings check started in background."
+        ? "Проверка старых объявлений запущена в фоне."
         : mode === "backfill"
-        ? "Backfill started in background."
-        : "Incremental sync started in background."
+        ? "Полная синхронизация запущена в фоне."
+        : "Инкрементальная синхронизация запущена в фоне."
     );
     setSyncBusy(false);
     await fetchSyncStatus(accessToken);
@@ -116,7 +116,7 @@ export default function AdminParserPage() {
   if (!accessToken) {
     return (
       <div className="max-w-xl mx-auto rounded-xl border bg-white p-5 shadow-sm text-sm text-slate-600">
-        Please sign in on <a className="text-blue-700 hover:underline" href="/admin">/admin</a>.
+        Войдите на <a className="text-blue-700 hover:underline" href="/admin">/admin</a>.
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function AdminParserPage() {
   if (isAdmin === false) {
     return (
       <div className="max-w-xl mx-auto rounded-xl border bg-white p-5 shadow-sm text-sm text-slate-600">
-        This account does not have admin access.
+        У этого аккаунта нет прав администратора.
       </div>
     );
   }
@@ -132,9 +132,9 @@ export default function AdminParserPage() {
   return (
     <div className="max-w-xl mx-auto rounded-xl border bg-white p-5 shadow-sm space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Telegram parser</h2>
+        <h2 className="text-lg font-semibold">Парсер Telegram</h2>
         <p className="text-xs text-slate-500">
-          Start parser from website. It runs in background on server.
+          Запуск парсера с сайта. Он работает в фоне на сервере.
         </p>
       </div>
 
@@ -147,7 +147,7 @@ export default function AdminParserPage() {
           }}
           disabled={syncBusy || syncRunning}
         >
-          {syncBusy ? "Starting..." : "Run incremental sync"}
+          {syncBusy ? "Запуск..." : "Запустить инкрементальную синхронизацию"}
         </button>
         <button
           type="button"
@@ -157,14 +157,14 @@ export default function AdminParserPage() {
           }}
           disabled={syncBusy || syncRunning}
         >
-          Check old listings
+          Проверить старые объявления
         </button>
       </div>
 
       <div className="text-xs text-slate-600 space-y-1">
-        <div>Status: {syncRunning ? "running" : "idle"}</div>
-        {syncMode && <div>Mode: {syncMode}</div>}
-        {syncStartedAt && <div>Started: {new Date(syncStartedAt).toLocaleString()}</div>}
+        <div>Статус: {syncRunning ? "выполняется" : "ожидание"}</div>
+        {syncMode && <div>Режим: {syncMode}</div>}
+        {syncStartedAt && <div>Запущено: {new Date(syncStartedAt).toLocaleString()}</div>}
       </div>
 
       {syncMessage && (
