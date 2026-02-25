@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Map, Marker, Popup } from "maplibre-gl";
+import type { Map as MapLibreMap, Marker, Popup } from "maplibre-gl";
 
 type MarkerPoint = {
   id: string;
@@ -29,8 +29,8 @@ export default function ListingMap({
   className?: string;
 }) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
-  const markersRef = useRef<Map<string, Marker>>(new Map());
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map());
   const maplibreRef = useRef<typeof import("maplibre-gl") | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -39,17 +39,9 @@ export default function ListingMap({
     lat: number;
     lng: number;
   } | null>(null);
-  const extraPointsRef = useRef<
-    Map<
-      string,
-      {
-        id: string;
-        lat: number;
-        lng: number;
-        items: MarkerPoint["items"];
-      }
-    >
-  >(new Map());
+  const extraPointsRef = useRef<globalThis.Map<string, MarkerPoint>>(
+    new globalThis.Map()
+  );
 
   const mapStyleUrl = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_MAPTILER_KEY;
@@ -97,7 +89,7 @@ export default function ListingMap({
 
     const markers = markersRef.current;
     const extraPoints = Array.from(extraPointsRef.current.values());
-    const mergedPoints = [...points, ...extraPoints];
+    const mergedPoints: MarkerPoint[] = [...points, ...extraPoints];
     const nextIds = new Set(mergedPoints.map((p) => p.id));
 
     for (const [id, marker] of markers.entries()) {
@@ -113,7 +105,7 @@ export default function ListingMap({
         if (!maplibregl) continue;
         const el = document.createElement("div");
         el.className = "listing-marker";
-          const pointMeta = points.find((p) => p.id === point.id);
+        const pointMeta = mergedPoints.find((p) => p.id === point.id);
           if (pointMeta) {
             const items = pointMeta.items ?? [
               {
@@ -122,8 +114,8 @@ export default function ListingMap({
                 priceLabel: ""
               }
             ];
-          el.dataset.items = JSON.stringify(items.slice(0, 3));
-          el.dataset.count = String(items.length);
+            el.dataset.items = JSON.stringify(items.slice(0, 3));
+            el.dataset.count = String(items.length);
         }
         el.addEventListener("mouseenter", () => {
           const popup = popupRef.current;
@@ -200,7 +192,10 @@ export default function ListingMap({
   }, [points, selectedId, mapReady, onSelect]);
 
   const applyCoords = (detail: { id: string; lat: number; lng: number }) => {
-    extraPointsRef.current.set(detail.id, detail);
+    extraPointsRef.current.set(detail.id, {
+      ...detail,
+      items: [{ id: detail.id, title: "Квартира", priceLabel: "" }]
+    });
     const maplibregl = maplibreRef.current;
     const map = mapRef.current;
     if (!maplibregl || !map) return;
