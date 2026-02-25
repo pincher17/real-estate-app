@@ -325,7 +325,7 @@ export default function ListingsWithMap({
   const showMapSection = showMapMobile;
 
   return (
-    <div className="grid min-w-0 gap-5 pb-24 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:pb-0">
+    <div className="grid min-w-0 gap-5 pb-24 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start lg:pb-0">
       <div className={`${showListSection ? "" : "hidden lg:block"} min-w-0`}>
         <div className="mb-4 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 md:p-5">
           <label
@@ -549,7 +549,7 @@ export default function ListingsWithMap({
         )}
       </div>
 
-      <div className={`${showMapSection ? "" : "hidden lg:block"} lg:sticky lg:top-24 h-fit`}>
+      <div className={`${showMapSection ? "" : "hidden lg:block"} h-fit lg:sticky lg:top-24 lg:self-start`}>
         <ListingMap
           points={points}
           selectedId={highlightKey || selectedKey || undefined}
