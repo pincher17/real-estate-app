@@ -60,6 +60,7 @@ export default function FilterForm({
   );
   const [sortValue, setSortValue] = useState(initialValues.sort);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [filtersLoading, setFiltersLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -68,6 +69,7 @@ export default function FilterForm({
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!formRef.current) return;
+    setFiltersLoading(true);
     const formData = new FormData(formRef.current);
     const params = new URLSearchParams();
     for (const [key, value] of formData.entries()) {
@@ -76,6 +78,11 @@ export default function FilterForm({
       params.append(key, asText);
     }
     const href = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    const currentHref = `${window.location.pathname}${window.location.search}`;
+    if (href === currentHref) {
+      setFiltersLoading(false);
+      return;
+    }
     startTransition(() => {
       router.replace(href, { scroll: false });
     });
@@ -92,6 +99,7 @@ export default function FilterForm({
     setSelectedRooms(initialValues.rooms);
     setSelectedConditions(initialValues.condition);
     setSortValue(initialValues.sort);
+    setFiltersLoading(false);
   }, [initialValues]);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -190,6 +198,11 @@ export default function FilterForm({
       className="relative z-30"
       onSubmit={onSubmit}
     >
+      {filtersLoading && (
+        <div className="route-loading" aria-hidden="true">
+          <span className="route-loading__bar" />
+        </div>
+      )}
       <div ref={dropdownRef} className="contents">
         <button
           type="button"
@@ -650,6 +663,7 @@ export default function FilterForm({
           type="button"
           className="ui-button-ghost h-12 w-full sm:h-auto sm:w-auto"
           onClick={() => {
+            setFiltersLoading(true);
             setPriceMin("");
             setPriceMax("");
             setAreaMin("");
@@ -661,6 +675,11 @@ export default function FilterForm({
             setSelectedConditions([]);
             setSortValue("newest");
             setOpenDropdown(null);
+            const currentHref = `${window.location.pathname}${window.location.search}`;
+            if (pathname === currentHref) {
+              setFiltersLoading(false);
+              return;
+            }
             startTransition(() => {
               router.replace(pathname, { scroll: false });
             });
