@@ -337,7 +337,7 @@ export default function FilterForm({
 
       <div className="mt-4 grid gap-3 sm:gap-4">
         <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <div className="flex min-h-[22px] items-end justify-between">
               <label className="text-xs font-semibold text-slate-700">
                 Диапазон цены, USD
@@ -420,10 +420,10 @@ export default function FilterForm({
                 Комнаты
               </label>
             </div>
-            <div className="relative z-30" data-dropdown-root>
+            <div className="relative z-30 min-w-0" data-dropdown-root>
               <button
                 type="button"
-                className="ui-select text-left overflow-hidden"
+                className="ui-select h-12 min-w-0 text-left overflow-hidden"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -431,7 +431,7 @@ export default function FilterForm({
                 }}
                 title={selectedRoomsLabel || "Любое количество комнат"}
               >
-                <span className="block truncate">
+                <span className="block min-w-0 max-w-full truncate whitespace-nowrap">
                   {selectedRoomsLabel || "Любое количество комнат"}
                 </span>
               </button>
@@ -466,7 +466,7 @@ export default function FilterForm({
             </div>
           </div>
 
-          <div className="space-y-2 md:hidden">
+          <div className="min-w-0 space-y-2 md:hidden">
             <div className="flex min-h-[22px] items-end">
               <label className="text-xs font-semibold text-slate-700">
                 Состояние
@@ -475,7 +475,7 @@ export default function FilterForm({
             <div className="relative z-20" data-dropdown-root>
               <button
                 type="button"
-                className="ui-select text-left overflow-hidden"
+                className="ui-select h-12 min-w-0 text-left overflow-hidden"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -485,7 +485,7 @@ export default function FilterForm({
                 }}
                 title={selectedConditionsLabel || "Любое состояние"}
               >
-                <span className="block truncate">
+                <span className="block min-w-0 max-w-full truncate whitespace-nowrap">
                   {selectedConditionsLabel || "Любое состояние"}
                 </span>
               </button>
@@ -565,7 +565,7 @@ export default function FilterForm({
             </div>
           </div>
 
-          <div className="hidden space-y-2 md:block">
+          <div className="hidden min-w-0 space-y-2 md:block">
             <div className="flex min-h-[22px] items-end">
               <label className="text-xs font-semibold text-slate-700">
                 Состояние
@@ -574,7 +574,7 @@ export default function FilterForm({
             <div className="relative z-20" data-dropdown-root>
               <button
                 type="button"
-                className="ui-select text-left overflow-hidden"
+                className="ui-select h-12 min-w-0 text-left overflow-hidden"
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -584,7 +584,7 @@ export default function FilterForm({
                 }}
                 title={selectedConditionsLabel || "Любое состояние"}
               >
-                <span className="block truncate">
+                <span className="block min-w-0 max-w-full truncate whitespace-nowrap">
                   {selectedConditionsLabel || "Любое состояние"}
                 </span>
               </button>
