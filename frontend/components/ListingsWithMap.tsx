@@ -27,6 +27,21 @@ type ListingRow = {
   listing_images: { url: string | null; position: number }[] | null;
 };
 
+const NEARBY_MARKER_GROUP_RADIUS_METERS = 18;
+
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return 2 * 6371000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const CONDITION_LABELS: Record<string, string> = {
   WHITE_FRAME: "Белый каркас",
   BLACK_FRAME: "Черный каркас",
@@ -212,31 +227,53 @@ export default function ListingsWithMap({
   }, [mapSourceListings, initialSearchQuery]);
 
   const { points, grouped } = useMemo(() => {
-    const groups = new Map<
-      string,
-      {
-        key: string;
-        lat: number;
-        lng: number;
-        listings: ListingRow[];
-      }
-    >();
+    const clusteredGroups: {
+      key: string;
+      lat: number;
+      lng: number;
+      sumLat: number;
+      sumLng: number;
+      listings: ListingRow[];
+    }[] = [];
 
     mapSearchFilteredListings.forEach((l) => {
       if (l.lat == null || l.lng == null) return;
       const lat = Number(l.lat);
       const lng = Number(l.lng);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-      const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-      const existing = groups.get(key);
-      if (existing) {
-        existing.listings.push(l);
+
+      let bestMatchIdx = -1;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (let idx = 0; idx < clusteredGroups.length; idx += 1) {
+        const group = clusteredGroups[idx];
+        const dist = distanceMeters(lat, lng, group.lat, group.lng);
+        if (dist <= NEARBY_MARKER_GROUP_RADIUS_METERS && dist < bestDistance) {
+          bestDistance = dist;
+          bestMatchIdx = idx;
+        }
+      }
+
+      if (bestMatchIdx >= 0) {
+        const group = clusteredGroups[bestMatchIdx];
+        group.listings.push(l);
+        group.sumLat += lat;
+        group.sumLng += lng;
+        group.lat = group.sumLat / group.listings.length;
+        group.lng = group.sumLng / group.listings.length;
       } else {
-        groups.set(key, { key, lat, lng, listings: [l] });
+        const key = `${lat.toFixed(6)},${lng.toFixed(6)}#${clusteredGroups.length + 1}`;
+        clusteredGroups.push({
+          key,
+          lat,
+          lng,
+          sumLat: lat,
+          sumLng: lng,
+          listings: [l]
+        });
       }
     });
 
-    const points = Array.from(groups.values()).map((group) => {
+    const points = clusteredGroups.map((group) => {
       const items = group.listings.map((l) => {
         const img =
           l.listing_images && l.listing_images.length
@@ -273,8 +310,28 @@ export default function ListingsWithMap({
       return { id: group.key, lat: group.lat, lng: group.lng, items };
     });
 
+    const groups = new Map<
+      string,
+      {
+        key: string;
+        lat: number;
+        lng: number;
+        listings: ListingRow[];
+      }
+    >(clusteredGroups.map(({ key, lat, lng, listings }) => [key, { key, lat, lng, listings }]));
+
     return { points, grouped: groups };
   }, [mapSearchFilteredListings]);
+
+  const listingToGroupId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const [groupId, group] of grouped.entries()) {
+      group.listings.forEach((listing) => {
+        map.set(listing.id, groupId);
+      });
+    }
+    return map;
+  }, [grouped]);
 
   const listDateFormatter = useMemo(
     () =>
@@ -523,7 +580,7 @@ export default function ListingsWithMap({
                     type="button"
                     onClick={() => {
                       if (!canMap) return;
-                      const key = `${Number(l.lat).toFixed(5)},${Number(l.lng).toFixed(5)}`;
+                      const key = listingToGroupId.get(l.id) ?? null;
                       setSelectedKey(null);
                       setHighlightKey(key);
                       setShowMapMobile(true);

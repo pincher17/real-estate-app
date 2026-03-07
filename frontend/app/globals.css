@@ -118,6 +118,10 @@ body {
   text-align: right;
 }
 
+.maplibregl-popup {
+  z-index: 80;
+}
+
 body[data-filters-open="1"] .mobile-map-toggle {
   display: none !important;
 }

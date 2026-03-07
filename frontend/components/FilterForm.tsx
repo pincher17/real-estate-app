@@ -173,7 +173,6 @@ export default function FilterForm({
     if (priceMax.trim()) count += 1;
     if (areaMin.trim()) count += 1;
     if (areaMax.trim()) count += 1;
-    if (district.trim()) count += 1;
     if (floorMin.trim()) count += 1;
     if (floorMax.trim()) count += 1;
     count += selectedRooms.length;
@@ -184,7 +183,6 @@ export default function FilterForm({
     priceMax,
     areaMin,
     areaMax,
-    district,
     floorMin,
     floorMax,
     selectedRooms,
@@ -536,16 +534,19 @@ export default function FilterForm({
           <div className="space-y-2">
             <div className="flex min-h-[22px] items-end">
               <label className="text-xs font-semibold text-slate-700">
-                Район
+                Район (скоро)
               </label>
             </div>
             <input
               type="text"
               name="district"
-              placeholder="Район"
+              placeholder="Фильтр временно недоступен"
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
-              className="ui-input"
+              disabled
+              aria-disabled="true"
+              title="Фильтр района временно недоступен"
+              className="ui-input cursor-not-allowed bg-slate-100 text-slate-400"
             />
           </div>
 

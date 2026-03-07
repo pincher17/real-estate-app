@@ -105,18 +105,15 @@ export default function ListingMap({
         if (!maplibregl) continue;
         const el = document.createElement("div");
         el.className = "listing-marker";
-        const pointMeta = mergedPoints.find((p) => p.id === point.id);
-          if (pointMeta) {
-            const items = pointMeta.items ?? [
-              {
-                id: pointMeta.id,
-                title: "Квартира",
-                priceLabel: ""
-              }
-            ];
-            el.dataset.items = JSON.stringify(items.slice(0, 3));
-            el.dataset.count = String(items.length);
-        }
+        const items = point.items ?? [
+          {
+            id: point.id,
+            title: "Квартира",
+            priceLabel: ""
+          }
+        ];
+        el.dataset.items = JSON.stringify(items.slice(0, 3));
+        el.dataset.count = String(items.length);
         el.addEventListener("mouseenter", () => {
           const popup = popupRef.current;
           const map = mapRef.current;
@@ -169,13 +166,25 @@ export default function ListingMap({
         markers.set(point.id, marker);
       } else {
         marker.setLngLat([point.lng, point.lat]);
+        const el = marker.getElement();
+        const items = point.items ?? [
+          {
+            id: point.id,
+            title: "Квартира",
+            priceLabel: ""
+          }
+        ];
+        el.dataset.items = JSON.stringify(items.slice(0, 3));
+        el.dataset.count = String(items.length);
       }
 
       const el = marker.getElement();
       if (selectedId && point.id === selectedId) {
         el.classList.add("listing-marker-selected");
+        el.style.zIndex = "30";
       } else {
         el.classList.remove("listing-marker-selected");
+        el.style.zIndex = "10";
       }
     }
 
