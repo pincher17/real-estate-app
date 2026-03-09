@@ -9,6 +9,11 @@ import {
 type SearchParams = { [key: string]: string | string[] | undefined };
 
 const PAGE_SIZE = 72;
+const DEFAULT_PRICE_MODE = "total";
+
+function normalizePriceMode(value: string | undefined): "total" | "perM2" {
+  return value === "perM2" ? "perM2" : "total";
+}
 
 type ListingRow = {
   id: string;
@@ -65,6 +70,7 @@ async function fetchListings(
   ]);
   const priceMin = searchParams.priceMin as string | undefined;
   const priceMax = searchParams.priceMax as string | undefined;
+  const priceMode = normalizePriceMode(searchParams.priceMode as string | undefined);
   const areaMin = searchParams.areaMin as string | undefined;
   const areaMax = searchParams.areaMax as string | undefined;
   const rooms = getMultiParam(searchParams.rooms).filter((value) =>
@@ -148,8 +154,10 @@ async function fetchListings(
     }
 
     // Filters
-    if (priceMin) query = query.gte("price_usd", Number(priceMin));
-    if (priceMax) query = query.lte("price_usd", Number(priceMax));
+    if (priceMode === "total") {
+      if (priceMin) query = query.gte("price_usd", Number(priceMin));
+      if (priceMax) query = query.lte("price_usd", Number(priceMax));
+    }
     if (areaMin) query = query.gte("area_m2", Number(areaMin));
     if (areaMax) query = query.lte("area_m2", Number(areaMax));
 
@@ -246,6 +254,20 @@ async function fetchListings(
   if (newBuilding === "1") {
     const newBuildRegex = /(new building|новострой|новостройк|новый дом)/i;
     rows = rows.filter((r) => newBuildRegex.test(r.description_raw ?? ""));
+    total = rows.length;
+  }
+
+  if (priceMode === "perM2" && (priceMin || priceMax)) {
+    const minValue = priceMin ? Number(priceMin) : null;
+    const maxValue = priceMax ? Number(priceMax) : null;
+    rows = rows.filter((r) => {
+      if (r.price_usd == null || r.price_usd <= 0) return false;
+      if (r.area_m2 == null || r.area_m2 <= 0) return false;
+      const perM2 = r.price_usd / r.area_m2;
+      if (minValue != null && perM2 < minValue) return false;
+      if (maxValue != null && perM2 > maxValue) return false;
+      return true;
+    });
     total = rows.length;
   }
 
@@ -417,6 +439,9 @@ export default async function Page({
 
   const priceMin = (resolvedSearchParams.priceMin as string) || "";
   const priceMax = (resolvedSearchParams.priceMax as string) || "";
+  const priceMode = normalizePriceMode(
+    (resolvedSearchParams.priceMode as string) || DEFAULT_PRICE_MODE
+  );
   const areaMin = (resolvedSearchParams.areaMin as string) || "";
   const areaMax = (resolvedSearchParams.areaMax as string) || "";
   const rooms = getMultiParam(resolvedSearchParams.rooms);
@@ -470,6 +495,7 @@ export default async function Page({
     <div className="grid min-w-0 gap-5 md:gap-7">
       <FilterForm
         initialValues={{
+          priceMode,
           priceMin,
           priceMax,
           areaMin,

@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 type FilterFormProps = {
   initialValues: {
+    priceMode: string;
     priceMin: string;
     priceMax: string;
     areaMin: string;
@@ -42,6 +43,7 @@ export default function FilterForm({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const pathname = usePathname();
+  const [priceMode, setPriceMode] = useState(initialValues.priceMode || "total");
   const [priceMin, setPriceMin] = useState(initialValues.priceMin);
   const [priceMax, setPriceMax] = useState(initialValues.priceMax);
   const [areaMin, setAreaMin] = useState(initialValues.areaMin);
@@ -75,6 +77,7 @@ export default function FilterForm({
     for (const [key, value] of formData.entries()) {
       const asText = String(value).trim();
       if (!asText) continue;
+      if (key === "priceMode" && asText === "total") continue;
       params.append(key, asText);
     }
     const href = params.toString() ? `${pathname}?${params.toString()}` : pathname;
@@ -89,6 +92,7 @@ export default function FilterForm({
     setMobileFiltersOpen(false);
   };
   useEffect(() => {
+    setPriceMode(initialValues.priceMode || "total");
     setPriceMin(initialValues.priceMin);
     setPriceMax(initialValues.priceMax);
     setAreaMin(initialValues.areaMin);
@@ -155,8 +159,13 @@ export default function FilterForm({
     };
   }, [mobileFiltersOpen]);
 
-  const priceMinOptions = ["30000", "50000", "75000", "100000", "150000"];
-  const priceMaxOptions = ["80000", "120000", "160000", "200000", "250000"];
+  const isPricePerM2 = priceMode === "perM2";
+  const priceMinOptions = isPricePerM2
+    ? ["700", "800", "900", "1000", "1200"]
+    : ["30000", "50000", "75000", "100000", "150000"];
+  const priceMaxOptions = isPricePerM2
+    ? ["1000", "1200", "1500", "1800", "2200"]
+    : ["80000", "120000", "160000", "200000", "250000"];
   const roomOptionsForCheckboxes = roomOptions.filter((opt) => opt.value);
   const conditionsForCheckboxes = conditions.filter((opt) => opt.value);
   const selectedRoomsSet = new Set(selectedRooms);
@@ -171,6 +180,7 @@ export default function FilterForm({
     let count = 0;
     if (priceMin.trim()) count += 1;
     if (priceMax.trim()) count += 1;
+    if (isPricePerM2) count += 1;
     if (areaMin.trim()) count += 1;
     if (areaMax.trim()) count += 1;
     if (floorMin.trim()) count += 1;
@@ -181,6 +191,7 @@ export default function FilterForm({
   }, [
     priceMin,
     priceMax,
+    isPricePerM2,
     areaMin,
     areaMax,
     floorMin,
@@ -292,6 +303,7 @@ export default function FilterForm({
           </div>
           <div className="flex w-full items-center gap-2 md:w-auto">
             <input type="hidden" name="sort" value={sortValue} />
+            <input type="hidden" name="priceMode" value={priceMode} />
             <input
               type="hidden"
               name="propertyType"
@@ -353,7 +365,35 @@ export default function FilterForm({
               <label className="text-xs font-semibold text-slate-700">
                 Диапазон цены, USD
               </label>
-              <span className="text-[11px] text-slate-500">За объект</span>
+              <span className="text-[11px] text-slate-500">
+                {isPricePerM2 ? "За м²" : "За объект"}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setPriceMode("total")}
+                className={`h-9 rounded-lg text-sm font-medium transition ${
+                  !isPricePerM2
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                aria-pressed={!isPricePerM2}
+              >
+                За объект
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriceMode("perM2")}
+                className={`h-9 rounded-lg text-sm font-medium transition ${
+                  isPricePerM2
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+                aria-pressed={isPricePerM2}
+              >
+                За м²
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="relative" data-dropdown-root>
@@ -364,10 +404,10 @@ export default function FilterForm({
                   value={priceMin}
                   onChange={(e) => setPriceMin(e.target.value)}
                   onFocus={() => setOpenDropdown("min")}
-                  className="ui-input pl-6"
+                  className={`ui-input ${isPricePerM2 ? "pl-12" : "pl-6"}`}
                 />
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-serif">
-                  $
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-serif">
+                  {isPricePerM2 ? "$/м²" : "$"}
                 </span>
                 {openDropdown === "min" && (
                   <div className="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white text-sm shadow-lg md:block">
@@ -384,6 +424,7 @@ export default function FilterForm({
                       >
                         <span className="font-serif">$</span>
                         {Number(value).toLocaleString("en-US")}
+                        {isPricePerM2 ? " /м²" : ""}
                       </button>
                     ))}
                   </div>
@@ -397,10 +438,10 @@ export default function FilterForm({
                   value={priceMax}
                   onChange={(e) => setPriceMax(e.target.value)}
                   onFocus={() => setOpenDropdown("max")}
-                  className="ui-input pl-6"
+                  className={`ui-input ${isPricePerM2 ? "pl-12" : "pl-6"}`}
                 />
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-serif">
-                  $
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-serif">
+                  {isPricePerM2 ? "$/м²" : "$"}
                 </span>
                 {openDropdown === "max" && (
                   <div className="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white text-sm shadow-lg md:block">
@@ -417,6 +458,7 @@ export default function FilterForm({
                       >
                         <span className="font-serif">$</span>
                         {Number(value).toLocaleString("en-US")}
+                        {isPricePerM2 ? " /м²" : ""}
                       </button>
                     ))}
                   </div>
@@ -667,6 +709,7 @@ export default function FilterForm({
             setFiltersLoading(true);
             setPriceMin("");
             setPriceMax("");
+            setPriceMode("total");
             setAreaMin("");
             setAreaMax("");
             setDistrict("");
